@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 
-pragma solidity 0.8.9;
+pragma solidity 0.8.15;
 
 import {IERC721Collective} from "../interfaces/IERC721CollectiveFlat.sol";
 
@@ -76,7 +76,7 @@ contract ExampleOnePerAddressModule {
      * are no other functions). Sending Ether to this contract will cause an
      * exception, because the fallback function does not have the `payable`
      * modifier.
-     * Source: https://docs.soliditylang.org/en/v0.8.9/contracts.html?highlight=fallback#fallback-function
+     * Source: https://docs.soliditylang.org/en/v0.8.15/contracts.html?highlight=fallback#fallback-function
      */
     fallback() external {
         revert("ExampleOnePerAddressModule: non-existent function");

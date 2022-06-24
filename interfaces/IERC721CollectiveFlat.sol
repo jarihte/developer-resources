@@ -1,13 +1,12 @@
 // SPDX-License-Identifier: UNLICENSED
 
-pragma solidity 0.8.9;
+pragma solidity 0.8.15;
 
 import {IGuard} from "./IGuard.sol";
 
 /**
  * Interface for IERC721Collective, enumerating all functions directly instead
- * of importing other interfaces in order to facilitate ease of reading
- * documentation.
+ * of importing other interfaces to simplify documentation.
  */
 interface IERC721Collective {
     /**
@@ -19,6 +18,7 @@ interface IERC721Collective {
      * @param transferGuard_ Address of transfer guard
      * @param renderer_ Address of renderer
      */
+    // solhint-disable-next-line func-name-mixedcase
     function __ERC721Collective_init(
         string memory name_,
         string memory symbol_,
@@ -476,13 +476,13 @@ interface IERC721Collective {
      * @param token Address of Club or Collective that erroneously received the
      * ERC20 token(s) (directly or via e.g. a module)
      * @param recipient Address that erroneously sent the ERC20 token(s)
-     * @param ERC20 Erroneously-sent ERC20 token to recover
+     * @param erc20 Erroneously-sent ERC20 token to recover
      * @param amount Amount to recover
      */
     function recoverERC20(
         address token,
         address recipient,
-        address ERC20,
+        address erc20,
         uint256 amount
     ) external;
 
@@ -497,13 +497,13 @@ interface IERC721Collective {
      * @param token Address of Club or Collective that erroneously received the
      * ERC721 token (directly or via e.g. a module)
      * @param recipient Address that erroneously sent the ERC721 token
-     * @param ERC721 Erroneously-sent ERC721 token to recover
+     * @param erc721 Erroneously-sent ERC721 token to recover
      * @param tokenId The tokenId to recover
      */
     function recoverERC721(
         address token,
         address recipient,
-        address ERC721,
+        address erc721,
         uint256 tokenId
     ) external;
 }

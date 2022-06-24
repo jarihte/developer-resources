@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 
-pragma solidity 0.8.9;
+pragma solidity 0.8.15;
 
 import {IRenderer} from "../interfaces/IRenderer.sol";
 import {IERC721Collective} from "../interfaces/IERC721CollectiveFlat.sol";

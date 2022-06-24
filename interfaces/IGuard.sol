@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 
-pragma solidity 0.8.9;
+pragma solidity 0.8.15;
 
 /**
  * Interface for a Guard that governs whether a token can be minted, burned, or
