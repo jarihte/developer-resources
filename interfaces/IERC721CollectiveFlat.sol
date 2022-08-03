@@ -5,12 +5,12 @@ pragma solidity 0.8.15;
 import {IGuard} from "./IGuard.sol";
 
 /**
- * Interface for IERC721Collective, enumerating all functions directly instead
+ * Interface for `IERC721Collective`, enumerating all functions directly instead
  * of importing other interfaces to simplify documentation.
  */
 interface IERC721Collective {
     /**
-     * Initializes ERC721Collective.
+     * Initializes `ERC721Collective`.
      * @param name_ Name of token
      * @param symbol_ Symbol of token
      * @param mintGuard_ Address of mint guard
