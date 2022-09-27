@@ -1,12 +1,15 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: MIT
 
 pragma solidity 0.8.15;
 
 import {IGuard} from "./IGuard.sol";
 
 /**
- * Interface for `IERC721Collective`, enumerating all functions directly instead
- * of importing other interfaces to simplify documentation.
+ * Interface containing signatures and documentation for all functions in
+ * `ERC721Collective`.
+ *
+ * This interface enumerates each function directly instead of inheriting other
+ * interfaces, allowing all definitions to be presented in one convenient file.
  */
 interface IERC721Collective {
     /**
@@ -98,7 +101,7 @@ interface IERC721Collective {
      * interface.
      */
     function burnGuard() external view returns (IGuard);
-    
+
     /**
      * @return True iff the burn Guard cannot be changed.
      */
@@ -141,7 +144,8 @@ interface IERC721Collective {
     function balanceOf(address owner) external view returns (uint256);
 
     /**
-     * @return An address approved to spend the `tokenId` token (other than the * owner), if one exists.
+     * @return An address approved to spend the `tokenId` token (other than the
+     * owner), if one exists.
      *
      * Requirements:
      * - `tokenId` must exist.
@@ -307,7 +311,8 @@ interface IERC721Collective {
     function approve(address to, uint256 tokenId) external;
 
     /**
-     * Approves or removes `operator` as an operator for the caller. Operators * will be able to spend any token owned by the caller.
+     * Approves or removes `operator` as an operator for the caller. Operators
+     * will be able to spend any token owned by the caller.
      *
      * Emits an `ApprovalForAll` event.
      *
