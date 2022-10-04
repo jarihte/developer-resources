@@ -5,15 +5,70 @@ pragma solidity 0.8.15;
 import {IGuard} from "./IGuard.sol";
 
 /**
- * Interface containing signatures and documentation for all functions in
- * `ERC721Collective`.
+ * Interface containing signatures and documentation for all functions and
+ * events in `ERC721Collective`.
  *
  * This interface enumerates each function directly instead of inheriting other
  * interfaces, allowing all definitions to be presented in one convenient file.
  */
 interface IERC721Collective {
+    event Initialized(uint8 version);
+    event OwnershipTransferred(
+        address indexed previousOwner,
+        address indexed newOwner
+    );
+    event ControlDisabled(address indexed controller);
+    event BatcherUpdated(address batcher);
+    event RendererUpdated(address indexed implementation);
+    event RendererLocked();
+    event GuardUpdated(GuardType indexed guard, address indexed implementation);
+    event GuardLocked(
+        bool mintGuardLocked,
+        bool burnGuardLocked,
+        bool transferGuardLocked
+    );
+    event Approval(
+        address indexed owner,
+        address indexed approved,
+        uint256 indexed tokenId
+    );
+    event ApprovalForAll(
+        address indexed owner,
+        address indexed operator,
+        bool approved
+    );
+    event Transfer(
+        address indexed from,
+        address indexed to,
+        uint256 indexed tokenId
+    );
+    event ControllerRedemption(
+        address account,
+        address indexed from,
+        uint256 value
+    );
+    event ControllerTransfer(
+        address controller,
+        address indexed from,
+        address indexed to,
+        uint256 value
+    );
+    event TokenRecoveredERC20(
+        address indexed recipient,
+        address indexed erc20,
+        uint256 amount
+    );
+    event TokenRecoveredERC721(
+        address indexed recipient,
+        address indexed erc721,
+        uint256 tokenId
+    );
+
     /**
      * Initializes `ERC721Collective`.
+     *
+     * Emits an `Initialized` event.
+     *
      * @param name_ Name of token
      * @param symbol_ Symbol of token
      * @param mintGuard_ Address of mint guard
@@ -30,6 +85,17 @@ interface IERC721Collective {
         address transferGuard_,
         address renderer_
     ) external;
+
+    /**
+     * @return ID of the first token that will be minted.
+     */
+    function STARTING_TOKEN_ID() external view returns (uint256);
+
+    /**
+     * Max consecutive tokenIds of bulk-minted tokens whose owner can be stored
+     * as address(0). This number is capped to reduce the cost of owner lookup.
+     */
+    function OWNER_ID_STAGGER() external view returns (uint256);
 
     /**
      * @return True iff `interfaceId` matches the `IERC721Collective` interface.
@@ -71,6 +137,12 @@ interface IERC721Collective {
      * transfer on behalf of arbitrary addresses.
      */
     function isControllable() external view returns (bool);
+
+    /**
+     * @return The address of the transaction batcher used to batch calls over
+     * onlyOwner functions.
+     */
+    function batcher() external view returns (address);
 
     /**
      * @return The address of the token Renderer. The contract at this address
@@ -118,6 +190,20 @@ interface IERC721Collective {
      * @return True iff the transfer Guard cannot be changed.
      */
     function transferGuardLocked() external view returns (bool);
+
+    /**
+     * @return receiver Address that should receive royalties from sales.
+     * @return royaltyAmount How much royalty that should be sent to `receiver`,
+     * denominated in the same unit of exchange as `salePrice`.
+     * @param tokenId The token being sold.
+     * @param salePrice The sale price of the token, denominated in any unit of
+     * exchange. The royalty amount will be denominated and should be paid in
+     * that same unit of exchange.
+     */
+    function royaltyInfo(uint256 tokenId, uint256 salePrice)
+        external
+        view
+        returns (address receiver, uint256 royaltyAmount);
 
     /**
      * @return The Uniform Resource Identifier (URI) for the token with
@@ -182,8 +268,10 @@ interface IERC721Collective {
 
     /** Transfers ownership of the contract to a new account (`newOwner`)
      *
+     * Emits an `OwnershipTransferred` event.
+     *
      * Requirements:
-     * - The caller must be the current owner
+     * - The caller must be the current owner.
      * @param newOwner Address that will become the owner
      */
     function transferOwnership(address newOwner) external;
@@ -193,7 +281,7 @@ interface IERC721Collective {
      * will no longer be possible to call `onlyOwner` functions.
      *
      * Requirements:
-     * - The caller must be the current owner
+     * - The caller must be the current owner.
      */
     function renounceOwnership() external;
 
@@ -204,9 +292,21 @@ interface IERC721Collective {
      * Emits a `ControlDisabled` event.
      *
      * Requirements:
-     * - The caller must be the token contract owner.
+     * - The caller must be the token contract owner or the batcher.
      */
     function disableControl() external;
+
+    /**
+     * Update the address of the batcher for batching calls over
+     * onlyOwner functions.
+     *
+     * Emits a `BatcherUpdated` event.
+     *
+     * Requirements:
+     * - The caller must be the token contract owner or the batcher.
+     * @param implementation Address of new batcher
+     */
+    function updateBatcher(address implementation) external;
 
     /**
      * Update the address of the token Renderer. The contract at the passed-in
@@ -215,7 +315,7 @@ interface IERC721Collective {
      * Emits a `RendererUpdated` event.
      *
      * Requirements:
-     * - The caller must be the token contract owner.
+     * - The caller must be the token contract owner or the batcher.
      * - Renderer must not be locked.
      * @param implementation Address of new Renderer
      */
@@ -228,7 +328,7 @@ interface IERC721Collective {
      * Emits a `RendererLocked` event.
      *
      * Requirements:
-     * - The caller must be the token contract owner.
+     * - The caller must be the token contract owner or the batcher.
      */
     function lockRenderer() external;
 
@@ -239,9 +339,9 @@ interface IERC721Collective {
      * Emits a `GuardUpdated` event with `GuardType.Mint`.
      *
      * Requirements:
-     * - The caller must be the token contract owner.
+     * - The caller must be the token contract owner or the batcher.
      * - The mint Guard must not be locked.
-     * @param implementation Address of mint Guard
+     * @param implementation Address of new mint Guard
      */
     function updateMintGuard(address implementation) external;
 
@@ -252,7 +352,7 @@ interface IERC721Collective {
      * Emits a `GuardUpdated` event with `GuardType.Burn`.
      *
      * Requirements:
-     * - The caller must be the token contract owner.
+     * - The caller must be the token contract owner or the batcher.
      * - The burn Guard must not be locked.
      * @param implementation Address of new burn Guard
      */
@@ -265,7 +365,7 @@ interface IERC721Collective {
      * Emits a `GuardUpdated` event with `GuardType.Transfer`.
      *
      * Requirements:
-     * - The caller must be the token contract owner.
+     * - The caller must be the token contract owner or the batcher.
      * - The transfer Guard must not be locked.
      * @param implementation Address of transfer Guard
      */
@@ -279,7 +379,7 @@ interface IERC721Collective {
      * event confirming whether each Guard is locked.
      *
      * Requirements:
-     * - The caller must be the owner.
+     * - The caller must be the token contract owner or the batcher.
      * @param mintGuardLock If true, the mint Guard will be locked. If false,
      * does nothing to the mint Guard.
      * @param burnGuardLock If true, the mint Guard will be locked. If false,
@@ -439,7 +539,7 @@ interface IERC721Collective {
      * `ControllerRedemption` event.
      *
      * Requirements:
-     * - The caller must be the token contract owner.
+     * - The caller must be the token contract owner or the batcher.
      * - `isControllable must be true.
      * - `tokenId` must exist.
      * - `tokenId` must be owned by `account`.
@@ -455,7 +555,7 @@ interface IERC721Collective {
      * Emits a `Transfer` event AND a `ControllerTransfer` event.
      *
      * Requirements:
-     * - The caller must be the token contract owner.
+     * - The caller must be the token contract owner or the batcher.
      * - `isControllable` must be true.
      * - `tokenId` must exist.
      * - `from` must own `tokenId`.
@@ -471,6 +571,37 @@ interface IERC721Collective {
     ) external;
 
     /**
+     * Sets the default royalty fee percentage for the ERC721.
+     *
+     * A custom royalty fee will override the default if set for specific
+     * `tokenId`s.
+     *
+     * Requirements:
+     * - The caller must be the token contract owner.
+     * - `isControllable` must be true.
+     * @param receiver The account to receive the royalty.
+     * @param feeNumerator The fee amount in basis points.
+     */
+    function setDefaultRoyalty(address receiver, uint96 feeNumerator) external;
+
+    /**
+     * Sets a custom royalty fee percentage for the specified `tokenId`.
+     *
+     * Requirements:
+     * - The caller must be the token contract owner.
+     * - `isControllable` must be true.
+     * - `tokenId` must exist.
+     * @param tokenId The tokenId to set a custom royalty for.
+     * @param receiver The account to receive the royalty.
+     * @param feeNumerator The fee amount in basis points.
+     */
+    function setTokenRoyalty(
+        uint256 tokenId,
+        address receiver,
+        uint96 feeNumerator
+    ) external;
+
+    /**
      * Allows the owner of an ERC20Club or ERC721Collective to return
      * any ERC20 tokens erroneously sent to the contract.
      *
@@ -478,14 +609,11 @@ interface IERC721Collective {
      *
      * Requirements:
      * - The caller must be the (Club or Collective) token contract owner.
-     * @param token Address of Club or Collective that erroneously received the
-     * ERC20 token(s) (directly or via e.g. a module)
      * @param recipient Address that erroneously sent the ERC20 token(s)
      * @param erc20 Erroneously-sent ERC20 token to recover
      * @param amount Amount to recover
      */
     function recoverERC20(
-        address token,
         address recipient,
         address erc20,
         uint256 amount
@@ -499,16 +627,19 @@ interface IERC721Collective {
      *
      * Requirements:
      * - The caller must be the (Club or Collective) token contract owner.
-     * @param token Address of Club or Collective that erroneously received the
-     * ERC721 token (directly or via e.g. a module)
      * @param recipient Address that erroneously sent the ERC721 token
      * @param erc721 Erroneously-sent ERC721 token to recover
      * @param tokenId The tokenId to recover
      */
     function recoverERC721(
-        address token,
         address recipient,
         address erc721,
         uint256 tokenId
     ) external;
+}
+
+enum GuardType {
+    Mint,
+    Burn,
+    Transfer
 }
